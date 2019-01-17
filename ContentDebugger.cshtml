@@ -3,6 +3,8 @@
 @using Newtonsoft.Json
 @using System.Data
 @using System.Dynamic
+@using System.IO
+@using System.Globalization 
 
 @{
     Layout = null;
@@ -84,6 +86,11 @@
 		string contentFilePath = string.Format(@"{0}{1}\{2}\", pathToContentFolder, websiteName, liveOrStage);
         return contentFilePath;
     }
+
+    string GetLastModifiedDate(bool isPreview, string contentViewReferenceName, string langCode) {
+        string path = GetContentCacheFilePath(isPreview,contentViewReferenceName, langCode);
+        return File.GetLastWriteTime(path).ToString();
+    }
 }
 
 
@@ -137,7 +144,7 @@
     </head>
     <body>
 		<h1>Content Debugger (@_mode)</h1>
-        <p>This is Content Debugger tool designed for Agility developers to be able to troubleshoot content issues. Search for a content reference and inspect the content that is synchronized to your servers.</p>
+        <p>This Content Debugger tool designed for Agility developers to be able to troubleshoot content issues. Search for a content reference and inspect the content that is synchronized to your website.</p>
         <form>
             <fieldset>
                 <legend>Parameters</legend>
@@ -167,13 +174,13 @@
         <div id="main">
             <div id="left">
                 <h2>Content Repository Data</h2>
-                <p>Items that affected by Scheduling are excluded from these results.</p>
+                <p>Content Items that are excluded due to Scheduling rules will NOT be included in these results.<br/><br/></p>
                 <pre>@DebugContentView(_contentViewReferenceName, _filter, _langCode)</pre>
             </div>
 
             <div id="right">
-                <h2>Raw Data from Content File</h2>
-                <p>Items that are affected by Scheduling will still always be included in these results.</p>
+                <h2>Raw Data from Content File - @GetLastModifiedDate(@_isPreview, _contentViewReferenceName, _langCode)</h2>
+                <p>ALL content items with a ReleaseDate in the future will be returned in this result, while items with a PullDate in the past will be exlcluded when the list is synced again.</p>
                 <pre>@RawContent(_isPreview, _contentViewReferenceName, _filter, _langCode)</pre>
             </div>
         </div>
@@ -181,9 +188,14 @@
 	<fieldset>
 		<legend>Server Info</legend>
 		<p>
-			<b>Machine Name</b> = @Environment.MachineName </br>
-			<b>Machine Time</b> = @DateTime.Now </br>
-			<b>Content Repository Path</b> = @GetContentCacheFolderPath(@_isPreview) </br>
+			<b>Machine Name</b> = @Environment.MachineName <br/>
+            <b>Current Culture</b> = @System.Globalization.CultureInfo.CurrentCulture.Name <br/>
+            <b>Time Zone Standard Time Name</b> = @TimeZone.CurrentTimeZone.StandardName <br/>
+			<b>Time Zone Daylight Saving Time Name</b> = @TimeZone.CurrentTimeZone.DaylightName <br/>
+            <b>Coordinated Universal Time</b> = @TimeZone.CurrentTimeZone.ToUniversalTime(DateTime.Now) <br />
+			<b>UTC Offset</b> = @TimeZone.CurrentTimeZone.GetUtcOffset(DateTime.Now) <br />
+			<b>Machine Time</b> = @DateTime.Now <br/>
+			<b>Content Repository Path</b> = @GetContentCacheFolderPath(@_isPreview) <br/>
 			<b>Content File Path</b> = @GetContentCacheFilePath(@_isPreview, _contentViewReferenceName, _langCode)
 		</p>
 	</fieldset>
