@@ -1,3 +1,6 @@
+[View on Help Site](https://agilitycms.zendesk.com/hc/en-us/articles/360025465452)
+
+[View on GitHub](https://github.com/agility/ContentDebugger)
 # Content Debugger for Agility Websites
 Have you published content without error, and the content has not updated on your site yet? Sometimes it can be tricky to figure out why. This tool will help you identify what content has and has not synced to your web server and help troubleshoot the issue. The end goal is to determine whether the issue is based within the application or the sync process itself between Agility and the web server.
 
@@ -12,7 +15,7 @@ Have you published content without error, and the content has not updated on you
 ## Setup
 You'll need to add some code to your MVC application to enable this. The easiest way to do this is to create a page template which executes the code we need.
 
-1. Download/clone the repo and copy the content within the ContentDebugger.cshtml file.
+1. Download/clone the repo (https://github.com/agility/ContentDebugger) and copy the content within the ContentDebugger.cshtml file.
 2. Create a new Page Template in Agility called *Content Debugger Template* with no module zones and instruct it to use Inline Code. If using Inline Code, you do NOT need to do a deployment to your website :) If you are unable to use Inline Code, you may add this as a page template file in your MVC project.
 3. Paste contents of the ContentDebugger.cshtml file as your Page Template code (either in Inline Code or the MVC project).
 4. Create a new page using the new Page Template *Content Debugger Template* you just created and ensure it is published. You should ensure that you mark the page as Visible In Menu/Sitemap to *FALSE* so that this page is not accessed via a search engine. You should also consider adding a robots.txt rule to exclude it and perhaps make the page path unguessable so its not easily accessible by public users.
