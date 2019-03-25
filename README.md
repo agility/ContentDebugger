@@ -1,11 +1,12 @@
 # Content Debugger for Agility Websites
-Have you published content without error, and the content has not updated on your site yet? Sometimes it can be tricky to figure out why. This tool will help you identify what content has and has not synced to your web server and help troubleshoot the issue.
-
-Possible causes for content not being updated:
-- The web application has additional caching in place and the old, stale content is still cached. Using this tool, you can identify IF the expected content has indeed synced to the webserver. If so, and the content is still not visible on the website, this indicates a caching issue in the application.
-- An error occurred during the sync from the Agility Content Server and your Webserver, and not error was reported. If the content has not synced to the web server and the item in question is published in the content manager, this would indicate that it never successfully synced the item. In this case, a support ticket should be opened with support@agilitycms.com for further inspection. You may also try re-syncing the item by publishing it again. However keep in mind that while this may solve the issue, it won't help in resolving the root cause and can often make that more difficult.
+Have you published content without error, and the content has not updated on your site yet? Sometimes it can be tricky to figure out why. This tool will help you identify what content has and has not synced to your web server and help troubleshoot the issue. The end goal is to determine whether the issue is based within the application or the sync process itself between Agility and the web server.
 
 ![Content Debugger](https://github.com/agility/ContentDebugger/raw/master/content-debbugger.png "Content Debugger")
+
+## Possible causes for content not being updated:
+- The web application has additional caching in place and the old, stale content is still cached. Using this tool, you can identify IF the expected content has indeed synced to the webserver. If so, and the content is still not visible on the website, this indicates a caching issue in the application.
+- An error occurred during the sync from the Agility Content Server and your Webserver, and not error was reported. If the content has not synced to the web server and the item in question is published in the content manager, this would indicate that it never successfully synced the item. In this case, a support ticket should be opened with support@agilitycms.com for further inspection. You may also try re-syncing the item by publishing it again. However keep in mind that while this may solve the issue, it won't help in resolving the root cause and can often make that more difficult.
+- You webserver is not set as an *active* syncing web server in Agility.
 
 
 ## Setup
@@ -29,4 +30,4 @@ On the right-side, you'll see the exposed **Raw Data from Content Files** with l
 
 
 ## Limitations
-This tool only works on *Content* and *Modules*, at this time there is no way to inpsect *Pages* or view synced *Content/Module* definitions.
+This tool only works on *Content* and *Modules*, at this time there is no way to inpsect *Pages* or view synced *Content/Module* definitions. 
