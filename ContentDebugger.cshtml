@@ -4,21 +4,28 @@
 @using System.Data
 @using System.Dynamic
 @using System.IO
-@using System.Globalization 
+@using System.Globalization
 
 @{
     Layout = null;
     bool _isPreview = (AgilityContext.CurrentMode == Agility.Web.Enum.Mode.Staging);
     string _mode = AgilityContext.CurrentMode.ToString();
 
-	string _contentViewReferenceName = Request.QueryString["referenceName"];
-	string _filter = Request.QueryString["filter"];
-	string _langCode = Request.QueryString["language"];
+    string _contentViewReferenceName = Request.QueryString["referenceName"];
+    string _filter = Request.QueryString["filter"];
+    string _langCode = Request.QueryString["language"];
+
+    string strPageID = Request.QueryString["pageID"];
+
+    int _pageID = 0;
+
+    int.TryParse(strPageID, out _pageID);
 }
 
 @functions {
-	class ContentViewDebugObj {
-        public string ContentViewReferenceName { get; set; } 
+    class ContentViewDebugObj
+    {
+        public string ContentViewReferenceName { get; set; }
         public string DefaultSortOrder { get; set; }
         public string LanguageCode { get; set; }
         public List<dynamic> ContentItems { get; set; }
@@ -26,155 +33,202 @@
         public string ErrorMessage { get; set; }
     }
 
-	 dynamic ToDynamic(AgilityContentItem ci) {
+    dynamic ToDynamic(AgilityContentItem ci)
+    {
         var dynamicObj = new ExpandoObject() as IDictionary<string, Object>;
         DataColumnCollection columns = ci.Row.Table.Columns;
-        //write each column into our dynamic obj 
-        foreach (var col in columns) { 
+        //write each column into our dynamic obj
+        foreach (var col in columns)
+        {
             string colName = col.ToString();
-            var objValue = ci[colName]; //specific cases with a string 
-            if (objValue is string) {
-                //have to test whether this is an attachment 
-                //TODO: need a more performant way to do this 
+            var objValue = ci[colName]; //specific cases with a string
+            if (objValue is string)
+            {
+                //have to test whether this is an attachment
+                //TODO: need a more performant way to do this
                 var attachment = ci.GetAttachment(colName);
-		        if (attachment != null) {
+                if (attachment != null)
+                {
                     objValue = attachment;
-                } 
-            } 
+                }
+            }
             dynamicObj.Add(colName, objValue);
-        } 
+        }
         return dynamicObj;
     }
 
-    string DebugContentView(string contentViewReferenceName, string filter, string langCode) {
+    string DebugContentView(string contentViewReferenceName, string filter, string langCode)
+    {
         var debugObj = new ContentViewDebugObj();
         var contentView = new AgilityContentRepository<AgilityContentItem>(contentViewReferenceName, langCode);
-        if (contentView == null) {
+        if (contentView == null)
+        {
             debugObj.ErrorMessage = string.Format("Could not find Content with Referencename '{0}'", contentViewReferenceName);
-        } else { 
+        }
+        else
+        {
             debugObj.ContentViewReferenceName = contentViewReferenceName;
-			debugObj.DefaultSortOrder = contentView.DefaultSort;
+            debugObj.DefaultSortOrder = contentView.DefaultSort;
             debugObj.LanguageCode = contentView.LanguageCode;
             var contentItems = contentView.Items(filter);
             debugObj.ContentItems = contentItems.Select(i => ToDynamic(i)).ToList();
             debugObj.TotalCount = debugObj.ContentItems.Count;
-        } 
+        }
         string json = JsonConvert.SerializeObject(debugObj, Formatting.Indented);
         return json;
     }
 
-    string RawContent(bool isPreview, string contentViewReferenceName, string filter, string langCode) {
+    string DebugPageContentRepo(int pageID, string langCode)
+    {
+        var page = Agility.Web.Data.GetPage(pageID, langCode);
+        string json = JsonConvert.SerializeObject(page, Formatting.Indented);
+        return json;
+    }
+
+    string RawContent(bool isPreview, string contentViewReferenceName, string filter, string langCode)
+    {
         string file = GetContentCacheFilePath(isPreview, contentViewReferenceName, langCode);
-        try {    
-		    dynamic contentView = FileUtils.ReadFile(file);     
+        try
+        {
+            dynamic contentView = FileUtils.ReadFile(file);
             return JsonConvert.SerializeObject(contentView, Formatting.Indented);
-        } catch (Exception ex) {
+        }
+        catch (Exception ex)
+        {
             throw;
             return string.Format(@"Error. Could not load file '{0}'", file);
         }
     }
 
-    string GetContentCacheFilePath(bool isPreview, string contentViewReferenceName, string langCode) {
+    string RawPageFromContentFile(bool isPreview, int pageID, string langCode)
+    {
+        string file = GetPageContentCacheFilePath(isPreview, pageID, langCode);
+        try
+        {
+            dynamic contentView = FileUtils.ReadFile(file);
+            return JsonConvert.SerializeObject(contentView, Formatting.Indented);
+        }
+        catch (Exception ex)
+        {
+            throw;
+            return string.Format(@"Error. Could not load file '{0}'", file);
+        }
+    }
+
+    string GetContentCacheFilePath(bool isPreview, string contentViewReferenceName, string langCode)
+    {
         string contentFilePath = string.Format(@"{0}AgilityContent_{1}_{2}.bin", GetContentCacheFolderPath(isPreview), contentViewReferenceName, langCode);
         return contentFilePath;
     }
 
-    string GetContentCacheFolderPath(bool isPreview) {
-		string pathToContentFolder = Agility.Web.Configuration.Settings.CurrentSettings.ContentCacheFilePath;
-        string websiteName = AgilityContext.WebsiteName;
-		string liveOrStage = isPreview ? "Staging" : "Live";
-		string contentFilePath = string.Format(@"{0}{1}\{2}\", pathToContentFolder, websiteName, liveOrStage);
+    string GetPageContentCacheFilePath(bool isPreview, int pageID, string langCode)
+    {
+        string contentFilePath = string.Format(@"{0}AgilityPage_{1}_{2}.bin", GetContentCacheFolderPath(isPreview), pageID, langCode);
         return contentFilePath;
     }
 
-    string GetLastModifiedDate(bool isPreview, string contentViewReferenceName, string langCode) {
-        string path = GetContentCacheFilePath(isPreview,contentViewReferenceName, langCode);
+    string GetContentCacheFolderPath(bool isPreview)
+    {
+        string pathToContentFolder = Agility.Web.Configuration.Settings.CurrentSettings.ContentCacheFilePath;
+        string websiteName = AgilityContext.WebsiteName;
+        string liveOrStage = isPreview ? "Staging" : "Live";
+        string contentFilePath = string.Format(@"{0}{1}\{2}\", pathToContentFolder, websiteName, liveOrStage);
+        return contentFilePath;
+    }
+
+    string GetLastModifiedDate(bool isPreview, string contentViewReferenceName, string langCode)
+    {
+        string path = GetContentCacheFilePath(isPreview, contentViewReferenceName, langCode);
         return File.GetLastWriteTime(path).ToString();
     }
 }
 
 
 <html>
-    <head>
-        <title>Content Debugger</title>
-		<style>
-			body {
-				font-family: Sans-Serif;
-                background-color: black;
-                color: #fff;
-                padding: 20px;
-			}
+<head>
+    <title>Content Debugger</title>
+    <style>
+        body {
+            font-family: Sans-Serif;
+            background-color: black;
+            color: #fff;
+            padding: 20px;
+        }
 
-            a {
-                color: orange!important;
-            }
+        a {
+            color: orange !important;
+        }
 
-            #main {
-                display: flex;
-                flex-direction: row;
-            }
+        #main {
+            display: flex;
+            flex-direction: row;
+        }
 
-            #left {
-                color: green;
-                padding-right: 1%;
-                width: 49%;
-            }
+        #left {
+            color: green;
+            padding-right: 1%;
+            width: 49%;
+        }
 
-            #right {
-                color: yellow;
-                padding-left: 1%;
-                width: 49%;
-            }
+        #right {
+            color: yellow;
+            padding-left: 1%;
+            width: 49%;
+        }
 
-            pre {
-                background-color: #101010;
-                height: 1000px;
-                overflow: auto;
-            }
+        pre {
+            background-color: #101010;
+            height: 1000px;
+            overflow: auto;
+        }
 
-            input {
-                margin-top: 6px;
-                padding: 6px;
-                background-color: black;
-                border: 1px solid #f1f1f1;
-                color: #ffffff;
-                width: 300px;
-            }
-		</style>
-    </head>
-    <body>
-		<h1>Content Debugger (@_mode)</h1>
-        <p>This Content Debugger tool designed for Agility developers to be able to troubleshoot content issues. Search for a content reference and inspect the content that is synchronized to your website.</p>
-        <form>
-            <fieldset>
-                <legend>Parameters</legend>
-				<p>
-					<b>referenceName</b> = The reference name of the list. This can be found in the Agility Content Manager under the <i>Settings</i>					tab.</br>
-					<input type="text" value="@_contentViewReferenceName" name="referenceName" placeholder="referenceName" required/>
-                </p>
-                
-                <p>
-					<b>language</b> = The language to query<br/>
-                    <input type="text" value="@_langCode" name="language" placeholder="language code" required/>
-				</p>
-				<p>
-					<b>filter (optional)</b> = a filter to apply to the Conent Repo Data (Filter on Raw Data is not currently supported). Examples include: "ContentID = 123", "Title like '%test%'".
-					See
-					<a href="http://www.csharp-examples.net/dataview-rowfilter/" target="_blank">Syntax Docs</a> for more detail. </br>
-					<input type="text" value="@_filter" name="filter" placeholder="filter"/>
-				</p>
-                <p>
-                    <button type="submit">Submit</button>
-                </p>
-            </fieldset>
-        </form>
+        input {
+            margin-top: 6px;
+            padding: 6px;
+            background-color: black;
+            border: 1px solid #f1f1f1;
+            color: #ffffff;
+            width: 300px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Content Debugger (@_mode)</h1>
+    <p>This Content Debugger tool designed for Agility developers to be able to troubleshoot content issues. Search for a content/module reference and inspect the content that is synchronized to your website.</p>
+    <form>
+        <fieldset>
+            <legend>Content/Module Inspection</legend>
+            <p>
+                <b>referenceName</b> = The reference name of a content item/list. This can be a Module on a page, or any other content view. The reference name can be found in the Agility Content Manager under the <i>Settings</i> tab of the list/item.</br>
+                <input type="text" value="@_contentViewReferenceName" name="referenceName" placeholder="referenceName" required />
+            </p>
+
+            <p>
+                <b>language</b> = The language to query<br />
+                <input type="text" value="@_langCode" name="language" placeholder="language code" required />
+            </p>
+            <p>
+                <b>filter (optional)</b> = a filter to apply to the Conent Repo Data (Filter on Raw Data is not currently supported). Examples include: "ContentID = 123", "Title like '%test%'".
+                See
+                <a href="http://www.csharp-examples.net/dataview-rowfilter/" target="_blank">Syntax Docs</a> for more detail. </br>
+                <input type="text" value="@_filter" name="filter" placeholder="filter" />
+            </p>
+            <input type="hidden" name="type" value="content" />
+            <p>
+                <button type="submit">Submit</button>
+            </p>
+        </fieldset>
+    </form>
 
 
-    @if(_contentViewReferenceName != null && _langCode != null) {
+
+
+    @if (_contentViewReferenceName != null && _langCode != null)
+    {
         <div id="main">
             <div id="left">
                 <h2>Content Repository Data</h2>
-                <p>Content Items that are excluded due to Scheduling rules will NOT be included in these results.<br/><br/></p>
+                <p>Content Items that are excluded due to Scheduling rules will NOT be included in these results.<br /><br /></p>
                 <pre>@DebugContentView(_contentViewReferenceName, _filter, _langCode)</pre>
             </div>
 
@@ -185,21 +239,62 @@
             </div>
         </div>
     }
-	<fieldset>
-		<legend>Server Info</legend>
-		<p>
-			<b>Machine Name</b> = @Environment.MachineName <br/>
-            <b>Current Culture</b> = @System.Globalization.CultureInfo.CurrentCulture.Name <br/>
-            <b>Time Zone Standard Time Name</b> = @TimeZone.CurrentTimeZone.StandardName <br/>
-			<b>Time Zone Daylight Saving Time Name</b> = @TimeZone.CurrentTimeZone.DaylightName <br/>
-            <b>Coordinated Universal Time</b> = @TimeZone.CurrentTimeZone.ToUniversalTime(DateTime.Now) <br />
-			<b>UTC Offset</b> = @TimeZone.CurrentTimeZone.GetUtcOffset(DateTime.Now) <br />
-			<b>Machine Time</b> = @DateTime.Now <br/>
-			<b>Content Repository Path</b> = @GetContentCacheFolderPath(@_isPreview) <br/>
-			<b>Content File Path</b> = @GetContentCacheFilePath(@_isPreview, _contentViewReferenceName, _langCode)
-		</p>
-	</fieldset>
-    </body>
-</html>
 
+        <p>----------------------------OR----------------------------</p>
+
+    <form>
+        <fieldset>
+            <legend>Page Inspection</legend>
+            <p>
+                <b>pageID</b> = The page ID of the page to be inspected. This can be found in the Agility Content Manager under the <i>Settings</i> tab of the page.</br>
+                <input type="number" value="@_pageID" name="pageID" placeholder="pageID" required />
+            </p>
+
+            <p>
+                <b>language</b> = The language to query<br />
+                <input type="text" value="@_langCode" name="language" placeholder="language code" required />
+            </p>
+            <input type="hidden" name="type" value="page" />
+            <p>
+                <button type="submit">Submit</button>
+            </p>
+        </fieldset>
+    </form>
+
+    @if (_pageID > 0 && _langCode != null)
+    {
+        <div id="main">
+            <div id="left">
+                <h2>Page via Content Repository</h2>
+                <p>This represents the content available to the application. This will be empty if the page is scheduled to be released in the future.<br /><br /></p>
+                <pre>@DebugPageContentRepo(_pageID, _langCode)</pre>
+            </div>
+
+            <div id="right">
+                <h2>Raw Data from Page Content File - @GetLastModifiedDate(@_isPreview, _contentViewReferenceName, _langCode)</h2>
+                <p>
+                    A page with a ReleaseDate in the future will be returned in this result, while a page with a PullDate in the
+                    past will be exlcluded when the sitemap is synced again.
+                </p>
+                <pre>@RawPageFromContentFile(_isPreview, _pageID, _langCode)</pre>
+            </div>
+        </div>
+    }
+
+    <fieldset>
+        <legend>Server Info</legend>
+        <p>
+            <b>Machine Name</b> = @Environment.MachineName <br />
+            <b>Current Culture</b> = @System.Globalization.CultureInfo.CurrentCulture.Name <br />
+            <b>Time Zone Standard Time Name</b> = @TimeZone.CurrentTimeZone.StandardName <br />
+            <b>Time Zone Daylight Saving Time Name</b> = @TimeZone.CurrentTimeZone.DaylightName <br />
+            <b>Coordinated Universal Time</b> = @TimeZone.CurrentTimeZone.ToUniversalTime(DateTime.Now) <br />
+            <b>UTC Offset</b> = @TimeZone.CurrentTimeZone.GetUtcOffset(DateTime.Now) <br />
+            <b>Machine Time</b> = @DateTime.Now <br />
+            <b>Content Repository Path</b> = @GetContentCacheFolderPath(@_isPreview) <br />
+            <b>Content File Path</b> = @GetContentCacheFilePath(@_isPreview, _contentViewReferenceName, _langCode)
+        </p>
+    </fieldset>
+</body>
+</html>
 
