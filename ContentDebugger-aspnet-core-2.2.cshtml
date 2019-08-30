@@ -11,11 +11,11 @@
     bool _isPreview = (AgilityContext.CurrentMode == Agility.Web.Enum.Mode.Staging);
     string _mode = AgilityContext.CurrentMode.ToString();
 
-    string _contentViewReferenceName = Request.QueryString["referenceName"];
-    string _filter = Request.QueryString["filter"];
-    string _langCode = Request.QueryString["language"];
+    string _contentViewReferenceName = Context.Request.Query["referenceName"];
+    string _filter = Context.Request.Query["filter"];
+    string _langCode = Context.Request.Query["language"];
 
-    string strPageID = Request.QueryString["pageID"];
+    string strPageID = Context.Request.Query["pageID"];
 
     int _pageID = 0;
 
@@ -90,7 +90,7 @@
         string file = GetContentCacheFilePath(isPreview, contentViewReferenceName, langCode);
         try
         {
-            dynamic contentView = FileUtils.ReadFile(file);
+            dynamic contentView = FileUtils.ReadFileBytes(file);
             return JsonConvert.SerializeObject(contentView, Formatting.Indented);
         }
         catch (Exception ex)
@@ -105,7 +105,7 @@
         string file = GetPageContentCacheFilePath(isPreview, pageID, langCode);
         try
         {
-            dynamic contentView = FileUtils.ReadFile(file);
+            dynamic contentView = FileUtils.ReadFileBytes(file);
             return JsonConvert.SerializeObject(contentView, Formatting.Indented);
         }
         catch (Exception ex)
@@ -129,7 +129,7 @@
 
     string GetContentCacheFolderPath(bool isPreview)
     {
-        string pathToContentFolder = Agility.Web.Configuration.Settings.CurrentSettings.ContentCacheFilePath;
+        string pathToContentFolder = Agility.Web.Configuration.Current.Settings.ContentCacheFilePath;
         string websiteName = AgilityContext.WebsiteName;
         string liveOrStage = isPreview ? "Staging" : "Live";
         string contentFilePath = string.Format(@"{0}{1}\{2}\", pathToContentFolder, websiteName, liveOrStage);
@@ -148,6 +148,7 @@
 <head>
     <title>Content Debugger</title>
     <style>
+
         body {
             font-family: Sans-Serif;
             background-color: black;
@@ -240,7 +241,7 @@
         </div>
     }
 
-        <p>----------------------------OR----------------------------</p>
+    <p>----------------------------OR----------------------------</p>
 
     <form>
         <fieldset>
